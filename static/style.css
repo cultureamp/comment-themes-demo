@@ -1,6 +1,7 @@
 body {
     font-family: IdealSans-Light, sans-serif;
     font-size: 14px;
+    padding: 30px;
 }
 
 .theme-labels {
@@ -32,3 +33,28 @@ span.closeness {
     font-style: italic;
 }
 
+.sel-configset {
+    font-weight: bold;
+}
+
+.theme-results th {
+    text-align: left;
+}
+
+nav.configset-list li {
+    display: inline-block;
+    list-style: none;
+    padding: 10px 20px;
+    font-size: 120%;
+    border: 1px lightsteelblue solid;
+    border-bottom: none;
+    margin: 1px;
+}
+
+nav.configset-list li.selected-tab {
+    background-color: white;
+}
+
+nav.configset-list li.other-tab {
+    background-color: lightsteelblue;
+}

@@ -5,13 +5,16 @@
 <nav class="configset-list">
     <ul>
     {% for configset in all_configsets %}
-        <li>
             {% if configset == args['configset'] %}
-            {{ configset }}
+            <li class="tab selected-tab"><span class="sel-configset">{{ configset }}</span></li>
             {% else %}
-            <a href="{{ url_for('show_survey_theme', configset=configset, company=args['company'], survey_id=args['survey_id']) }}">{{ configset }}</a>
+            <li class="tab other-tab">
+                <a class="configset-link"
+                   href="{{ url_for('show_survey_theme', configset=configset, company=args['company'], survey_id=args['survey_id']) }}">
+                    {{ configset }}
+                </a>
+            </li>
             {% endif %}
-        </li>
     {% endfor %}
     </ul>
 </nav>
