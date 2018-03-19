@@ -1,6 +1,21 @@
 {% extends "layout.html" %}
 
 {% block body %}
+{% set args = request.view_args %}
+<nav class="configset-list">
+    <ul>
+    {% for configset in all_configsets %}
+        <li>
+            {% if configset == args['configset'] %}
+            {{ configset }}
+            {% else %}
+            <a href="{{ url_for('show_survey_theme', configset=configset, company=args['company'], survey_id=args['survey_id']) }}">{{ configset }}</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+</nav>
+
 <table class="theme-results">
     <thead>
     <th class="theme-id">ID</th>
