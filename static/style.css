@@ -1,0 +1,34 @@
+body {
+    font-family: IdealSans-Light, sans-serif;
+    font-size: 14px;
+}
+
+.theme-labels {
+    width: 30%;
+}
+
+.theme-id {
+    width: 5%;
+}
+
+.theme-comments {
+    width: 60%;
+    font-size: 0.9em;
+}
+
+.theme-labels dt {
+    font-weight: bold;
+}
+
+span.closeness::before {
+    content: "[";
+}
+
+span.closeness::after {
+    content: "]";
+}
+
+span.closeness {
+    font-style: italic;
+}
+

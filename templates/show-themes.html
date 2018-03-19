@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<table class="theme-results">
+    <thead>
+    <th class="theme-id">ID</th>
+    <th class="theme-labels">Labels</th>
+    <th class="theme-comments">Comments</th>
+    </thead>
+    <tbody>
+    {% for th in theme_result.themes %}
+    <tr data-theme-id="{{ th.id }}">
+        <td class="theme-id">{{ th.id }}</td>
+        <td class="theme-labels">
+            <dl>
+                {% for label, value in th.labels.items() %}
+                <dt>{{ label }}</dt>
+                <dd>{{ value }}</dd>
+                {% endfor %}
+            </dl>
+        </td>
+        <td class="theme-comments">
+            <ul>
+                {% for doc in th.documents | sort(attribute='closeness', reverse=True) %}
+                <li title="{{ doc.id }}" data-doc-id="{{ doc.id }}" data-closeness="{{ doc.closeness }}">
+                    <span class="closeness">{{ "%0.2f" | format(doc.closeness) }}</span>
+                    <span class="doc-text">{{ doc.text }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
