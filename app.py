@@ -1,8 +1,10 @@
 import glob
-
-from flask import Flask, render_template
-from os import path
 import json
+from collections import defaultdict
+from os import path
+
+from flask import Flask, render_template, request, g, session, redirect, url_for
+from flask_simpleldap import LDAP
 
 
 class DEFAULTS:
@@ -19,14 +21,18 @@ class DEFAULTS:
         'num_comments',
         'sentiment'
     }
+    # LDAP_LOGIN_VIEW = 'sign_in'
+    LDAP_OPT_PROTOCOL_VERSION = 3
+    LDAP_USER_OBJECT_FILTER = '(&(objectclass=Person)(sAMAccountName=%s))' # for active directory
 
 
 app = Flask(__name__)
 
 app.config.from_object(DEFAULTS)
-app.config.from_pyfile(path.join(path.split(__file__)[0], 'localconfig.py'), silent=False)
+app.config.from_pyfile(path.join(path.split(__file__)[0], 'config', 'local.py'), silent=False)
+app.secret_key = "NmeZszYsfoRNHtGkCM8YcCJM"
 
-from collections import defaultdict
+ldap = LDAP(app)
 
 
 def cluster_file_root():
@@ -78,7 +84,9 @@ def theme_result_from_cluster_json(clustered_doc_json_path, label_json_path):
     return ThemeResult(themes)
 
 
+# @ldap.group_required(['Comments Prototype Access'])
 @app.route('/themes/<configset>/<company>/<survey_id>')
+@ldap.login_required
 def show_survey_theme(configset, company, survey_id):
     parent = path.join(cluster_file_root(), configset, company)
     cluster_json = path.join(parent, f"{survey_id}-clusters.json")
@@ -87,6 +95,40 @@ def show_survey_theme(configset, company, survey_id):
     all_configsets = _list_cluster_configsets(company, survey_id)
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=all_configsets, this_configset=configset)
+
+
+@app.route('/')
+@ldap.login_required
+def index():
+    return render_template("index.html")
+
+@app.before_request
+def before_request():
+    g.user = None
+    if 'user_id' in session:
+        # This is where you'd query your database to get the user info.
+        g.user = {}
+        # Create a global with the LDAP groups the user is a member of.
+        g.ldap_groups = ldap.get_user_groups(user=session['user_id'])
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if g.user:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        user = request.form['user']
+        passwd = request.form['passwd']
+        test = ldap.bind_user(user, passwd)
+        if test is None or passwd == '':
+            return 'Invalid credentials'
+        else:
+            session['user_id'] = request.form['user']
+            return redirect('/')
+    return """<form action="" method="post">
+                user: <input name="user"><br>
+                password:<input type="password" name="passwd"><br>
+                <input type="submit" value="Submit"></form>"""
 
 
 def _list_cluster_configsets(company, survey_id):
@@ -104,9 +146,9 @@ def _nth_parent(target, level=1):
     return npar
 
 
-@app.route('/')
-def hello_world():
-    return 'Hello World!'
+# @app.route('/')
+# def hello_world():
+#     return 'Hello World!'
 
 
 if __name__ == '__main__':
