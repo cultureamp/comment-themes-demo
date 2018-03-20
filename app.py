@@ -112,12 +112,20 @@ def before_request():
         g.ldap_groups = ldap.get_user_groups(user=session['user_id'])
 
 
+def _clean_up_user(input_user):
+    extraneous = '@cultureamp.com'
+    if input_user.endswith(extraneous):
+        return input_user[:-len(extraneous)]
+    else:
+        return input_user
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if g.user:
         return redirect(url_for('index'))
     if request.method == 'POST':
-        user = request.form['user']
+        user = _clean_up_user(request.form['user'])
         passwd = request.form['passwd']
         test = ldap.bind_user(user, passwd)
         if test is None or passwd == '':
@@ -125,10 +133,7 @@ def login():
         else:
             session['user_id'] = request.form['user']
             return redirect('/')
-    return """<form action="" method="post">
-                user: <input name="user"><br>
-                password:<input type="password" name="passwd"><br>
-                <input type="submit" value="Submit"></form>"""
+    return render_template("login.html")
 
 
 def _list_cluster_configsets(company, survey_id):
