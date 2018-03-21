@@ -131,7 +131,7 @@ def login():
         if test is None or passwd == '':
             return 'Invalid credentials'
         else:
-            session['user_id'] = request.form['user']
+            session['user_id'] = user
             return redirect('/')  # TODO: check `next` parameter instead of just using index
     return render_template("login.html")
 
