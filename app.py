@@ -190,4 +190,9 @@ def _nth_parent(target, level=1):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-h", "--host", default='localhost')
+    parser.add_argument("-p", "--port", default=5000, type=int)
+    parser.add_argument("-d", "--debug", default=False, type=bool)
     app.run()
