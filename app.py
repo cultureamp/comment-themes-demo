@@ -134,7 +134,7 @@ def login():
             return 'Invalid credentials'
         else:
             session['user_id'] = user
-            return redirect('/')  # TODO: check `next` parameter instead of just using index
+            return redirect(request.args.get('next', '/'))
     return render_template("login.html")
 
 
