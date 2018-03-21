@@ -2,10 +2,12 @@ import glob
 import json
 from collections import defaultdict
 from os import path
+from typing import NamedTuple
 
 from flask import Flask, render_template, request, g, session, redirect, url_for
 from flask_simpleldap import LDAP
 
+CLUSTER_JSON_SUFF = "-clusters.json"
 
 class DEFAULTS:
     CLUSTER_FILE_ROOT = './data/clusters'
@@ -84,7 +86,6 @@ def theme_result_from_cluster_json(clustered_doc_json_path, label_json_path):
     return ThemeResult(themes)
 
 
-# @ldap.group_required(['Comments Prototype Access'])
 @app.route('/themes/<configset>/<company>/<survey_id>')
 @ldap.group_required(['Comments Prototype Access'])
 def show_survey_theme(configset, company, survey_id):
@@ -100,7 +101,8 @@ def show_survey_theme(configset, company, survey_id):
 @app.route('/')
 @ldap.login_required
 def index():
-    return render_template("index.html")
+    return render_template("index.html", comp_si_confsets=_list_all_survey_ids())
+
 
 @app.before_request
 def before_request():
@@ -142,11 +144,34 @@ def logout():
     return redirect(url_for('index'))
 
 
+class CompSurveyId(NamedTuple):
+    company: str
+    survey_id: str
+
+
 def _list_cluster_configsets(company, survey_id):
     cluster_root = cluster_file_root()
-    matching_json = glob.glob(path.join(cluster_root, '*', company, f"{survey_id}-clusters.json"))
+    matching_json = glob.glob(path.join(cluster_root, '*', company, f"{survey_id}{CLUSTER_JSON_SUFF}"))
     configset_dirs = [_nth_parent(f, 2) for f in matching_json]
     return sorted([path.relpath(csd, cluster_root) for csd in configset_dirs])
+
+
+def _list_all_survey_ids():
+    cluster_root = cluster_file_root()
+
+    def survey_id_and_configset(globmatch):
+        relative = path.relpath(globmatch, cluster_root)
+        confset_company, survey_json = path.split(relative)
+        survey_id = survey_json[:-len(CLUSTER_JSON_SUFF)]
+        confset, company = path.split(confset_company)
+        return CompSurveyId(company, survey_id), confset
+
+    matching = glob.glob(path.join(cluster_root, '*', '*', f'*{CLUSTER_JSON_SUFF}'))
+    survey_ids_to_config_sets = defaultdict(list)
+    for m in matching:
+        comp_survey_id, confset = survey_id_and_configset(m)
+        survey_ids_to_config_sets[comp_survey_id].append(confset)
+    return list(survey_ids_to_config_sets.items())
 
 
 def _nth_parent(target, level=1):

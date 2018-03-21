@@ -1,5 +1,20 @@
 {% extends "layout.html" %}
 
 {% block body %}
-Main page
+<div class="item-list">
+    <ul class="survey-list">
+        {% for csid, confsets in comp_si_confsets %}
+        <li>{{ csid.survey_id[-8:] }} ({{ csid.company }})</li>
+        <ul class='confset-list'>
+            {% for confset in confsets %}
+            <li>
+                <a href="{{ url_for('show_survey_theme', survey_id=csid.survey_id, configset=confset, company=csid.company) }}">
+                {{ confset }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endfor %}
+    </ul>
+</div>
 {% endblock %}
