@@ -95,7 +95,7 @@ def show_survey_theme(configset, company, survey_id):
     cluster_json = path.join(parent, f"{survey_id}-clusters.json")
     label_json= path.join(parent, f"{survey_id}-cluster_labels.json")
     theme_result = theme_result_from_cluster_json(cluster_json, label_json)
-    all_configsets = _list_cluster_configsets(company, survey_id)
+    all_configsets = CLUSTER_STORE._list_configsets(company, survey_id)
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=all_configsets, this_configset=configset)
 
@@ -151,29 +151,35 @@ class CompSurveyId(NamedTuple):
     survey_id: str
 
 
-def _list_cluster_configsets(company, survey_id):
-    cluster_root = cluster_file_root()
-    matching_json = glob.glob(path.join(cluster_root, '*', company, f"{survey_id}{CLUSTER_JSON_SUFF}"))
-    configset_dirs = [_nth_parent(f, 2) for f in matching_json]
-    return sorted([path.relpath(csd, cluster_root) for csd in configset_dirs])
+class ClusterStore:
+    def __init__(self, store_root):
+        self.store_root = store_root
+
+    def _list_configsets(self, company, survey_id):
+        matching_json = glob.glob(path.join(self.store_root, '*', company, f"{survey_id}{CLUSTER_JSON_SUFF}"))
+        configset_dirs = [_nth_parent(f, 2) for f in matching_json]
+        return sorted([path.relpath(csd, self.store_root) for csd in configset_dirs])
+
+    def _all_survey_ids(self):
+        def survey_id_and_configset(globmatch):
+            relative = path.relpath(globmatch, self.store_root)
+            confset_company, survey_json = path.split(relative)
+            survey_id = survey_json[:-len(CLUSTER_JSON_SUFF)]
+            confset, company = path.split(confset_company)
+            return CompSurveyId(company, survey_id), confset
+
+        matching = glob.glob(path.join(self.store_root, '*', '*', f'*{CLUSTER_JSON_SUFF}'))
+        survey_ids_to_config_sets = defaultdict(list)
+        for m in matching:
+            comp_survey_id, confset = survey_id_and_configset(m)
+            survey_ids_to_config_sets[comp_survey_id].append(confset)
+        return survey_ids_to_config_sets
+
+CLUSTER_STORE = ClusterStore(cluster_file_root())
 
 
 def _list_all_survey_ids():
-    cluster_root = cluster_file_root()
-
-    def survey_id_and_configset(globmatch):
-        relative = path.relpath(globmatch, cluster_root)
-        confset_company, survey_json = path.split(relative)
-        survey_id = survey_json[:-len(CLUSTER_JSON_SUFF)]
-        confset, company = path.split(confset_company)
-        return CompSurveyId(company, survey_id), confset
-
-    matching = glob.glob(path.join(cluster_root, '*', '*', f'*{CLUSTER_JSON_SUFF}'))
-    survey_ids_to_config_sets = defaultdict(list)
-    for m in matching:
-        comp_survey_id, confset = survey_id_and_configset(m)
-        survey_ids_to_config_sets[comp_survey_id].append(confset)
-    return list(survey_ids_to_config_sets.items())
+    return list(CLUSTER_STORE._all_survey_ids().items())
 
 
 def _nth_parent(target, level=1):
@@ -192,7 +198,8 @@ def _nth_parent(target, level=1):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-h", "--host", default='localhost')
+    parser.add_argument("--host", default='localhost')
     parser.add_argument("-p", "--port", default=5000, type=int)
     parser.add_argument("-d", "--debug", default=False, type=bool)
-    app.run()
+    args = parser.parse_args()
+    app.run(host=args.host, port=args.port, debug=args.debug)
