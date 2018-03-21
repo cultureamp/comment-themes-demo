@@ -86,7 +86,7 @@ def theme_result_from_cluster_json(clustered_doc_json_path, label_json_path):
 
 # @ldap.group_required(['Comments Prototype Access'])
 @app.route('/themes/<configset>/<company>/<survey_id>')
-@ldap.login_required
+@ldap.group_required(['Comments Prototype Access'])
 def show_survey_theme(configset, company, survey_id):
     parent = path.join(cluster_file_root(), configset, company)
     cluster_json = path.join(parent, f"{survey_id}-clusters.json")
@@ -107,7 +107,7 @@ def before_request():
     g.user = None
     if 'user_id' in session:
         # This is where you'd query your database to get the user info.
-        g.user = {}
+        g.user = {'ldapuser': session['user_id']}
         # Create a global with the LDAP groups the user is a member of.
         g.ldap_groups = ldap.get_user_groups(user=session['user_id'])
 
@@ -132,8 +132,14 @@ def login():
             return 'Invalid credentials'
         else:
             session['user_id'] = request.form['user']
-            return redirect('/')
+            return redirect('/')  # TODO: check `next` parameter instead of just using index
     return render_template("login.html")
+
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('index'))
 
 
 def _list_cluster_configsets(company, survey_id):

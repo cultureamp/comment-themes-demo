@@ -6,7 +6,11 @@
 </head>
 <body>
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
-<div class=page>
+<div class='user-info'>
+    <span class='user-name'>{{ g.user['ldapuser'] }}</span>
+    {% if g.user %}<span class="logout" id="logout"><a href="{{ url_for('logout') }}">Log out</a></span>{% endif %}
+</div>
+<div class="page">
     {% block body %}{% endblock %}
 </div>
 </body>

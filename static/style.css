@@ -58,3 +58,28 @@ nav.configset-list li.selected-tab {
 nav.configset-list li.other-tab {
     background-color: lightsteelblue;
 }
+
+.user-info {
+    float: right;
+}
+
+.user-name {
+    font-style: italic;
+}
+
+.logout::before {
+    content: "[";
+}
+
+.logout::after {
+    content: "]";
+}
+
+.login-form {
+    margin: auto;
+    width: 20%;
+}
+
+.login-form-wrapper {
+    width: 100%;
+}
