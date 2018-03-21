@@ -26,6 +26,8 @@ class DEFAULTS:
     # LDAP_LOGIN_VIEW = 'sign_in'
     LDAP_OPT_PROTOCOL_VERSION = 3
     LDAP_USER_OBJECT_FILTER = '(&(objectclass=Person)(sAMAccountName=%s))' # for active directory
+    LDAP_HOST = 'cultureamp.net'
+    LDAP_BASE_DN = "OU=Users,OU=cultureamp,DC=cultureamp,DC=net"
 
 
 app = Flask(__name__)
