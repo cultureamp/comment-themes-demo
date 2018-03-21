@@ -12,7 +12,7 @@ CLUSTER_JSON_SUFF = "-clusters.json"
 class DEFAULTS:
     CLUSTER_FILE_ROOT = './data/clusters'
     LABEL_WHITELIST = {
-        'most_common_05'
+        'most_common_05',
         'highest_pmi_05',
         'relevance_0_600',
         'summ_basic',
