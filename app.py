@@ -198,7 +198,7 @@ def _nth_parent(target, level=1):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default='localhost')
+    parser.add_argument("--host", default='127.0.0.1')
     parser.add_argument("-p", "--port", default=5000, type=int)
     parser.add_argument("-d", "--debug", default=False, type=bool)
     args = parser.parse_args()
