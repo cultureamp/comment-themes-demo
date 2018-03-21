@@ -84,7 +84,7 @@ def theme_result_from_cluster_json(clustered_doc_json_path, label_json_path):
         theme_doc = ThemeDoc(doc['id'], doc['text_val_original'], 1.0 - cluster_dist)
         docs_by_theme_id[int(float(doc['cluster_id']))].append(theme_doc)
     sorted_theme_ids = sorted(docs_by_theme_id)
-    themes = [Theme(tid, docs_by_theme_id[tid], label_mapping[tid]) for tid in sorted_theme_ids]
+    themes = [Theme(tid, docs_by_theme_id.get(tid, []), label_mapping.get(tid, "NA")) for tid in sorted_theme_ids]
     return ThemeResult(themes)
 
 
