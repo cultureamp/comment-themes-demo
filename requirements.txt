@@ -1,2 +1,5 @@
 flask
 flask_simpleldap
+-e git+ssh://git@github.com/cultureamp/mlib.git@am/move-keras-loading#egg=mlib
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz#egg=en_core_web_md
+-e git+ssh://git@github.com/cultureamp/ci_nlp_proto#egg=ci_nlp_proto

@@ -1,5 +1,7 @@
 import glob
 import json
+import pickle
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from os import path
 from typing import NamedTuple
@@ -8,12 +10,17 @@ from flask import Flask, render_template, request, g, session, redirect, url_for
 from flask_simpleldap import LDAP
 
 CLUSTER_JSON_SUFF = "-clusters.json"
+TOPIC_PICKLE_SUFF = "-topicmodel.pickle"
 
 class DEFAULTS:
     CLUSTER_FILE_ROOT = './data/clusters'
+    TM_FILE_ROOT = './data/topic-models'
+
     LABEL_WHITELIST = {
         'most_common_05',
+        'most_common_10'
         'highest_pmi_05',
+        'highest_pmi_10',
         'relevance_0_600',
         'summ_basic',
         'summ_luhn',
@@ -37,10 +44,6 @@ app.config.from_pyfile(path.join(path.split(__file__)[0], 'config', 'local.py'),
 app.secret_key = "NmeZszYsfoRNHtGkCM8YcCJM"
 
 ldap = LDAP(app)
-
-
-def cluster_file_root():
-    return app.config['CLUSTER_FILE_ROOT']
 
 
 def label_whitelist():
@@ -77,10 +80,29 @@ def _read_json(json_path):
 @app.route('/themes/<configset>/<company>/<survey_id>')
 @ldap.group_required(['Comments Prototype Access'])
 def show_survey_theme(configset, company, survey_id):
-    all_configsets = CLUSTER_STORE._list_configsets(company, survey_id)
-    theme_result = CLUSTER_STORE.theme_result(configset, company, survey_id)
+    stores = (CLUSTER_STORE, TOPIC_MODEL_STORE)
+    def all_configsets():
+        for st in stores:
+            for cs in st._list_configsets(company, survey_id):
+                yield cs
+    theme_result = None
+    for st in stores:
+        try:
+            theme_result = st.theme_result(configset, company, survey_id)
+        except FileNotFoundError: # only one store will work
+            continue
+        break
+    return render_template("show-themes.html", theme_result=theme_result,
+            all_configsets=list(all_configsets()), this_configset=configset)
+
+
+def _show_survey_theme_for_store(store: 'ThemeStore', configset, company, survey_id):
+    all_configsets = store._list_configsets(company, survey_id)
+    theme_result = store.theme_result(configset, company, survey_id)
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=all_configsets, this_configset=configset)
+
+
 
 
 @app.route('/')
@@ -134,38 +156,72 @@ class CompSurveyId(NamedTuple):
     survey_id: str
 
 
-class TMStore:
-    def __init__(self, store_root):
-        pass
-
-class ClusterStore:
+class ThemeStore(metaclass=ABCMeta):
     def __init__(self, store_root):
         self.store_root = store_root
 
     def _list_configsets(self, company, survey_id):
-        matching_json = glob.glob(path.join(self.store_root, '*', company, f"{survey_id}{CLUSTER_JSON_SUFF}"))
+        matching_json = glob.glob(path.join(self.store_root, '*', company,
+                f"{survey_id}{self._main_theme_file_suffix()}"))
         configset_dirs = [_nth_parent(f, 2) for f in matching_json]
         return sorted([path.relpath(csd, self.store_root) for csd in configset_dirs])
 
-    def _all_survey_ids(self):
+    @abstractmethod
+    def _main_theme_file_suffix(self):
+        pass
+
+    def all_survey_ids(self):
         def survey_id_and_configset(globmatch):
             relative = path.relpath(globmatch, self.store_root)
             confset_company, survey_json = path.split(relative)
-            survey_id = survey_json[:-len(CLUSTER_JSON_SUFF)]
+            survey_id = survey_json[:-len(self._main_theme_file_suffix())]
             confset, company = path.split(confset_company)
             return CompSurveyId(company, survey_id), confset
 
-        matching = glob.glob(path.join(self.store_root, '*', '*', f'*{CLUSTER_JSON_SUFF}'))
+        matching = glob.glob(path.join(self.store_root, '*', '*', f'*{self._main_theme_file_suffix()}'))
         survey_ids_to_config_sets = defaultdict(list)
         for m in matching:
             comp_survey_id, confset = survey_id_and_configset(m)
             survey_ids_to_config_sets[comp_survey_id].append(confset)
         return survey_ids_to_config_sets
 
-    def theme_result(self, configset, company, survey_id):
+    @abstractmethod
+    def theme_result(self, configset, company, survey_id) -> ThemeResult:
+        pass
+
+
+class TMStore(ThemeStore):
+
+    def _main_theme_file_suffix(self):
+        return TOPIC_PICKLE_SUFF
+
+    def theme_result(self, configset, company, survey_id) -> ThemeResult:
+        parent = path.join(self.store_root, configset, company)
+        tm_pickle = path.join(parent, f"{survey_id}{self._main_theme_file_suffix()}")
+        label_json = path.join(parent, f"{survey_id}-cluster_labels.json")
+        return TMStore._theme_result_from_stored(tm_pickle, label_json)
+
+    @staticmethod
+    def _theme_result_from_stored(tm_pickle_path, label_json_path):
+        with open(tm_pickle_path, 'rb') as f:
+            tmr = pickle.load(f)
+        label_mapping = {int(k): v for k, v in _read_json(label_json_path).items()}
+        def theme_docs(topic):
+            for tmdoc in topic.documents(0.3):
+                yield ThemeDoc(tmdoc.id, tmdoc.raw_text, tmdoc.topic_proportion)
+        themes = [Theme(t.index, list(theme_docs(t)), label_mapping.get(t.index, {})) for t in tmr.all_topics()]
+        return ThemeResult(themes)
+
+
+class ClusterStore(ThemeStore):
+
+    def _main_theme_file_suffix(self):
+        return CLUSTER_JSON_SUFF
+
+    def theme_result(self, configset, company, survey_id) -> ThemeResult:
         parent = path.join(self.store_root, configset, company)
         cluster_json = path.join(parent, f"{survey_id}-clusters.json")
-        label_json= path.join(parent, f"{survey_id}-cluster_labels.json")
+        label_json = path.join(parent, f"{survey_id}-cluster_labels.json")
         return ClusterStore._theme_result_from_cluster_json(cluster_json, label_json)
 
     @staticmethod
@@ -184,11 +240,17 @@ class ClusterStore:
         return ThemeResult(themes)
 
 
-CLUSTER_STORE = ClusterStore(cluster_file_root())
+CLUSTER_STORE = ClusterStore(app.config['CLUSTER_FILE_ROOT'])
+
+TOPIC_MODEL_STORE = TMStore(app.config['TM_FILE_ROOT'])
 
 
 def _list_all_survey_ids():
-    return list(CLUSTER_STORE._all_survey_ids().items())
+    all_survs = defaultdict(list)
+    for st in (CLUSTER_STORE, TOPIC_MODEL_STORE):
+        for key, vals in st.all_survey_ids().items():
+            all_survs[key].extend(sorted(vals))
+    return all_survs.items()
 
 
 def _nth_parent(target, level=1):
