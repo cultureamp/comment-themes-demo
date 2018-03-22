@@ -133,6 +133,10 @@ class CompSurveyId(NamedTuple):
     survey_id: str
 
 
+class TMStore:
+    def __init__(self, store_root):
+
+
 class ClusterStore:
     def __init__(self, store_root):
         self.store_root = store_root
@@ -166,7 +170,7 @@ class ClusterStore:
     @staticmethod
     def _theme_result_from_cluster_json(clustered_doc_json_path, label_json_path):
         documents = _read_json(clustered_doc_json_path)
-        label_mapping = {int(float(k)): v for k, v in _read_json(label_json_path).items()}
+        label_mapping = {int(float(v['cluster_id'])): v for k, v in _read_json(label_json_path).items()}
         docs_by_theme_id = defaultdict(list)
         for doc in documents:
             if doc['cluster_id'] is None:
