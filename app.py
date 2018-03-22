@@ -78,6 +78,7 @@ def _read_json(json_path):
 @ldap.group_required(['Comments Prototype Access'])
 def show_survey_theme(configset, company, survey_id):
     all_configsets = CLUSTER_STORE._list_configsets(company, survey_id)
+    theme_result = CLUSTER_STORE.theme_result(configset, company, survey_id)
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=all_configsets, this_configset=configset)
 
@@ -161,7 +162,7 @@ class ClusterStore:
             survey_ids_to_config_sets[comp_survey_id].append(confset)
         return survey_ids_to_config_sets
 
-    def theme_result(self, configset, company):
+    def theme_result(self, configset, company, survey_id):
         parent = path.join(self.store_root, configset, company)
         cluster_json = path.join(parent, f"{survey_id}-clusters.json")
         label_json= path.join(parent, f"{survey_id}-cluster_labels.json")
