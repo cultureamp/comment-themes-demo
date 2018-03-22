@@ -135,7 +135,7 @@ class CompSurveyId(NamedTuple):
 
 class TMStore:
     def __init__(self, store_root):
-
+        pass
 
 class ClusterStore:
     def __init__(self, store_root):
