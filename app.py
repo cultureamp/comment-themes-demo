@@ -18,7 +18,7 @@ class DEFAULTS:
 
     LABEL_WHITELIST = {
         'most_common_05',
-        'most_common_10'
+        'most_common_10',
         'highest_pmi_05',
         'highest_pmi_10',
         'relevance_0_600',
@@ -205,7 +205,7 @@ class TMStore(ThemeStore):
     def _theme_result_from_stored(tm_pickle_path, label_json_path):
         with open(tm_pickle_path, 'rb') as f:
             tmr = pickle.load(f)
-        label_mapping = {int(k): v for k, v in _read_json(label_json_path).items()}
+        label_mapping = {int(v['topic_id']): v for k, v in _read_json(label_json_path).items()} #XXX why +1? hack
         def theme_docs(topic):
             for tmdoc in topic.documents(0.3):
                 yield ThemeDoc(tmdoc.id, tmdoc.raw_text, tmdoc.topic_proportion)
