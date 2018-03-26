@@ -75,6 +75,10 @@ nav.configset-list li.other-tab {
     content: "]";
 }
 
+.theme-results td {
+    vertical-align: top;
+}
+
 .login-form {
     margin: auto;
     width: 20%;
