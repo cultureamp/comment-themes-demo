@@ -13,8 +13,8 @@ CLUSTER_JSON_SUFF = "-clusters.json"
 TOPIC_PICKLE_SUFF = "-topicmodel.pickle"
 
 class DEFAULTS:
-    CLUSTER_FILE_ROOT = './data/clusters'
-    TM_FILE_ROOT = './data/topic-models'
+    CLUSTER_FILE_ROOTS = ['./data/clusters']
+    TM_FILE_ROOTS = ['./data/topic-models']
 
     LABEL_WHITELIST = {
         'most_common_05',
@@ -80,7 +80,7 @@ def _read_json(json_path):
 @app.route('/themes/<configset>/<company>/<survey_id>')
 @ldap.group_required(['Comments Prototype Access'])
 def show_survey_theme(configset, company, survey_id):
-    stores = (CLUSTER_STORE, TOPIC_MODEL_STORE)
+    stores = CLUSTER_STORES + TOPIC_MODEL_STORES
     def all_configsets():
         for st in stores:
             for cs in st._list_configsets(company, survey_id):
@@ -240,14 +240,14 @@ class ClusterStore(ThemeStore):
         return ThemeResult(themes)
 
 
-CLUSTER_STORE = ClusterStore(app.config['CLUSTER_FILE_ROOT'])
+CLUSTER_STORES = [ClusterStore(cfr) for cfr in app.config['CLUSTER_FILE_ROOTS']]
 
-TOPIC_MODEL_STORE = TMStore(app.config['TM_FILE_ROOT'])
+TOPIC_MODEL_STORES = [TMStore(tfr) for tfr in app.config['TM_FILE_ROOTS']]
 
 
 def _list_all_survey_ids():
     all_survs = defaultdict(list)
-    for st in (CLUSTER_STORE, TOPIC_MODEL_STORE):
+    for st in CLUSTER_STORES + TOPIC_MODEL_STORES:
         for key, vals in st.all_survey_ids().items():
             all_survs[key].extend(sorted(vals))
     return all_survs.items()
