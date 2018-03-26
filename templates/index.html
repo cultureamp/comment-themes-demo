@@ -4,7 +4,7 @@
 <div class="item-list">
     <ul class="survey-list">
         {% for csid, confsets in comp_si_confsets %}
-        <li>{{ csid.survey_id[-8:] }} ({{ csid.company }})</li>
+        <li>{{ csid.survey_id[-13:] }} ({{ csid.company }})</li>
         <ul class='confset-list'>
             {% for confset in confsets %}
             <li>
