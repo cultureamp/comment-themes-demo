@@ -13,8 +13,8 @@ CLUSTER_JSON_SUFF = "-clusters.json"
 TOPIC_PICKLE_SUFF = "-topicmodel.pickle"
 
 class DEFAULTS:
-    CLUSTER_FILE_ROOTS = ['./data/clusters']
-    TM_FILE_ROOTS = ['./data/topic-models']
+    CLUSTER_FILE_ROOTS = { 'all': './data/clusters' }
+    TM_FILE_ROOTS = { 'all': './data/topic-models' }
 
     LABEL_WHITELIST = {
         'most_common_05',
@@ -77,10 +77,15 @@ def _read_json(json_path):
 
 
 
-@app.route('/themes/<configset>/<company>/<survey_id>')
+@app.route('/themes/<category>/<configset>/<company>/<survey_id>')
 @ldap.group_required(['Comments Prototype Access'])
-def show_survey_theme(configset, company, survey_id):
-    stores = CLUSTER_STORES + TOPIC_MODEL_STORES
+def show_survey_theme(configset, category, company, survey_id):
+    stores = []
+    for store_by_cat in (CLUSTER_STORES, TOPIC_MODEL_STORES):
+        try:
+            stores.append(store_by_cat[category])
+        except KeyError:
+            pass
     def all_configsets():
         for st in stores:
             for cs in st._list_configsets(company, survey_id):
@@ -93,7 +98,8 @@ def show_survey_theme(configset, company, survey_id):
             continue
         break
     return render_template("show-themes.html", theme_result=theme_result,
-            all_configsets=list(all_configsets()), this_configset=configset)
+            all_configsets=list(all_configsets()), this_configset=configset,
+            category=category)
 
 
 def _show_survey_theme_for_store(store: 'ThemeStore', configset, company, survey_id):
@@ -240,16 +246,16 @@ class ClusterStore(ThemeStore):
         return ThemeResult(themes)
 
 
-CLUSTER_STORES = [ClusterStore(cfr) for cfr in app.config['CLUSTER_FILE_ROOTS']]
+CLUSTER_STORES = {cat: ClusterStore(cfr) for cat, cfr in app.config['CLUSTER_FILE_ROOTS'].items()}
 
-TOPIC_MODEL_STORES = [TMStore(tfr) for tfr in app.config['TM_FILE_ROOTS']]
+TOPIC_MODEL_STORES = {cat: TMStore(tfr) for cat, tfr in app.config['TM_FILE_ROOTS'].items()}
 
 
 def _list_all_survey_ids():
     all_survs = defaultdict(list)
-    for st in CLUSTER_STORES + TOPIC_MODEL_STORES:
+    for cat, st in list(CLUSTER_STORES.items()) + list(TOPIC_MODEL_STORES.items()):
         for key, vals in st.all_survey_ids().items():
-            all_survs[key].extend(sorted(vals))
+            all_survs[cat, key].extend(sorted(vals))
     return all_survs.items()
 
 

@@ -2,6 +2,9 @@
 
 {% block body %}
 {% set args = request.view_args %}
+
+<h3>{{ args['category'] }}: {{ args['survey_id'] }} ({{ args['company'] }})</h3>
+
 <nav class="configset-list">
     <ul>
     {% for configset in all_configsets %}
@@ -10,7 +13,7 @@
             {% else %}
             <li class="tab other-tab">
                 <a class="configset-link"
-                   href="{{ url_for('show_survey_theme', configset=configset, company=args['company'], survey_id=args['survey_id']) }}">
+                   href="{{ url_for('show_survey_theme', category=args['category'], configset=configset, company=args['company'], survey_id=args['survey_id']) }}">
                     {{ configset }}
                 </a>
             </li>

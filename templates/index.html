@@ -3,12 +3,14 @@
 {% block body %}
 <div class="item-list">
     <ul class="survey-list">
-        {% for csid, confsets in comp_si_confsets %}
-        <li>{{ csid.survey_id[-13:] }} ({{ csid.company }})</li>
+        {% for cat_csid, confsets in comp_si_confsets %}
+        {% set csid = cat_csid[1] %}
+        {% set cat = cat_csid[0] %}
+        <li>{{ cat }}: {{ csid.survey_id[-13:] }} ({{ csid.company }})</li>
         <ul class='confset-list'>
             {% for confset in confsets %}
             <li>
-                <a href="{{ url_for('show_survey_theme', survey_id=csid.survey_id, configset=confset, company=csid.company) }}">
+                <a href="{{ url_for('show_survey_theme', category=cat, survey_id=csid.survey_id, configset=confset, company=csid.company) }}">
                 {{ confset }}
                 </a>
             </li>
