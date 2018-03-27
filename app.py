@@ -1,10 +1,12 @@
 import glob
 import json
 import pickle
+import pandas as pd
+
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from os import path
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 from flask import Flask, render_template, request, g, session, redirect, url_for
 from flask_simpleldap import LDAP
@@ -60,15 +62,36 @@ class Theme:
 
 
 class ThemeDoc:
-    def __init__(self, id, text, closeness):
+    def __init__(self, id, text, closeness, question_id):
         self.id = id
         self.text = text
         self.closeness = closeness
+        self.question_id = question_id
 
 
 class ThemeResult:
-    def __init__(self, themes):
+    def __init__(self, themes: List[Theme]):
         self.themes = themes
+
+    def purity(self):
+        question_labels = []
+        clusters = []
+        for theme in self.themes:
+            question_labels.extend(td.question_id for td in theme.documents)
+            clusters.extend([theme.id] * len(theme.documents))
+        return purity(question_labels, clusters)
+
+
+def purity(labels_true, clusters_pred):
+    assert len(labels_true) == len(clusters_pred)
+    assigns = pd.DataFrame({'label': labels_true, 'cluster': clusters_pred})
+    cluster_ids = assigns['cluster'].unique()
+    total_in_max_in_cluster = 0
+    for cid in cluster_ids:
+        members = assigns.loc[assigns['cluster'] == cid]
+        counts = members.groupby('label')['label'].value_counts()
+        total_in_max_in_cluster += max(counts)
+    return total_in_max_in_cluster / len(assigns)
 
 
 def _read_json(json_path):
@@ -214,7 +237,7 @@ class TMStore(ThemeStore):
         label_mapping = {int(v['topic_id']): v for k, v in _read_json(label_json_path).items()} #XXX why +1? hack
         def theme_docs(topic):
             for tmdoc in topic.documents(0.3):
-                yield ThemeDoc(tmdoc.id, tmdoc.raw_text, tmdoc.topic_proportion)
+                yield ThemeDoc(tmdoc.id, tmdoc.raw_text, tmdoc.topic_proportion, tmdoc.raw_data['question_id'])
         themes = [Theme(t.index, list(theme_docs(t)), label_mapping.get(t.index, {})) for t in tmr.all_topics()]
         return ThemeResult(themes)
 
@@ -239,7 +262,7 @@ class ClusterStore(ThemeStore):
             if doc['cluster_id'] is None:
                 continue
             cluster_dist = 0.0 if doc['cluster_dist'] is None else doc['cluster_dist']
-            theme_doc = ThemeDoc(doc['id'], doc['text_val_original'], 1.0 - cluster_dist)
+            theme_doc = ThemeDoc(doc['id'], doc['text_val_original'], 1.0 - cluster_dist, doc['question_id'])
             docs_by_theme_id[int(float(doc['cluster_id']))].append(theme_doc)
         sorted_theme_ids = sorted(docs_by_theme_id)
         themes = [Theme(tid, docs_by_theme_id.get(tid, []), label_mapping.get(tid, "NA")) for tid in sorted_theme_ids]
