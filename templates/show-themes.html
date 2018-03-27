@@ -5,10 +5,12 @@
 
 <h3>{{ args['category'] }}: {{ args['survey_id'] }} ({{ args['company'] }})</h3>
 
-<div>
-    <span class='metric-label'>Purity: </span>
-    <span class='metric-value'>{{ "%0.3f" | format(theme_result.purity()) }}</span>
+{% for label, value in metrics %}
+<div class="metric">
+    <span class='metric-label'>{{ label }}: </span>
+    <span class='metric-value'>{{ "%0.3f" | format(value) }}</span>
 </div>
+{% endfor %}
 
 <nav class="configset-list">
     <ul>

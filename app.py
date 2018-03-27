@@ -10,6 +10,7 @@ from typing import NamedTuple, List
 
 from flask import Flask, render_template, request, g, session, redirect, url_for
 from flask_simpleldap import LDAP
+from sklearn.metrics import adjusted_mutual_info_score
 
 CLUSTER_JSON_SUFF = "-clusters.json"
 TOPIC_PICKLE_SUFF = "-topicmodel.pickle"
@@ -72,14 +73,22 @@ class ThemeDoc:
 class ThemeResult:
     def __init__(self, themes: List[Theme]):
         self.themes = themes
+        self._decompose_themes()
 
-    def purity(self):
-        question_labels = []
-        clusters = []
+    def _decompose_themes(self):
+        self._question_labels = []
+        self._theme_ids = []
         for theme in self.themes:
-            question_labels.extend(td.question_id for td in theme.documents)
-            clusters.extend([theme.id] * len(theme.documents))
-        return purity(question_labels, clusters)
+            self._question_labels.extend(td.question_id for td in theme.documents)
+            self._theme_ids.extend([theme.id] * len(theme.documents))
+
+    @property
+    def purity(self):
+        return purity(self._question_labels, self._theme_ids)
+
+    @property
+    def adj_nmi(self):
+        return adjusted_mutual_info_score(self._question_labels, self._theme_ids)
 
 
 def purity(labels_true, clusters_pred):
@@ -120,9 +129,10 @@ def show_survey_theme(configset, category, company, survey_id):
         except FileNotFoundError: # only one store will work
             continue
         break
+    metrics = [(key, getattr(theme_result, key)) for key in ('adj_nmi', 'purity')]
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=list(all_configsets()), this_configset=configset,
-            category=category)
+            metrics=metrics)
 
 
 def _show_survey_theme_for_store(store: 'ThemeStore', configset, company, survey_id):
