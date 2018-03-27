@@ -90,6 +90,14 @@ class ThemeResult:
     def adj_nmi(self):
         return adjusted_mutual_info_score(self._question_labels, self._theme_ids)
 
+    @property
+    def total_comments(self):
+        return sum(len(th.documents) for th in self.themes)
+
+    @property
+    def num_themes(self):
+        return len(self.themes)
+
 
 def purity(labels_true, clusters_pred):
     assert len(labels_true) == len(clusters_pred)
@@ -129,7 +137,7 @@ def show_survey_theme(configset, category, company, survey_id):
         except FileNotFoundError: # only one store will work
             continue
         break
-    metrics = [(key, getattr(theme_result, key)) for key in ('adj_nmi', 'purity')]
+    metrics = [(key, getattr(theme_result, key)) for key in ('total_comments', 'num_themes', 'adj_nmi', 'purity')]
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=list(all_configsets()), this_configset=configset,
             metrics=metrics)
