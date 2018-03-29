@@ -33,6 +33,13 @@ class DEFAULTS:
         'num_comments',
         'sentiment'
     }
+    SUMM_LABEL_WHITELIST = {
+        'most_common_05',
+        'most_common_10',
+        'summ_basic',
+        'num_comments',
+        'sentiment',
+    }
     # LDAP_LOGIN_VIEW = 'sign_in'
     LDAP_OPT_PROTOCOL_VERSION = 3
     LDAP_USER_OBJECT_FILTER = '(&(objectclass=Person)(sAMAccountName=%s))' # for active directory
@@ -53,13 +60,19 @@ def label_whitelist():
     return app.config['LABEL_WHITELIST']
 
 
+def summ_label_whitelist():
+    return app.config['SUMM_LABEL_WHITELIST']
+
+
 class Theme:
     label_whitelist = label_whitelist()
+    summ_label_whitelist = summ_label_whitelist()
 
     def __init__(self, id, documents, labels):
         self.id = id
         self.documents = documents
-        self.labels = {name: labels[name] for name in labels if name in self.label_whitelist}
+        self.labels = [(name, labels[name]) for name in labels if name in self.label_whitelist]
+        self.summ_labels = [(name, labels[name]) for name in labels if name in self.summ_label_whitelist]
 
 
 class ThemeDoc:
@@ -104,7 +117,7 @@ class ThemeResult:
 
     @property
     def smallest_theme_proportion(self):
-        return max(len(th.documents) for th in self.themes) / self.total_comments
+        return min(len(th.documents) for th in self.themes) / self.total_comments
 
 
 
@@ -148,6 +161,7 @@ def show_survey_theme(configset, category, company, survey_id):
         break
     metric_keys = ('total_comments', 'num_themes', 'adj_nmi', 'purity',
         'largest_theme_proportion', 'smallest_theme_proportion')
+
     metrics = [(key, getattr(theme_result, key)) for key in metric_keys]
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=list(all_configsets()), this_configset=configset,

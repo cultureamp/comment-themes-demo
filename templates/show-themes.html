@@ -29,6 +29,26 @@
     </ul>
 </nav>
 
+<table class="theme-summ">
+    {% set theme_proto = theme_result.themes[0] %}
+    <thead>
+    <th class="theme-id">ID</th>
+    {% for sl, _ in theme_proto.summ_labels %}
+    <th class="theme-summ-field-head">{% if sl == 'num_comments'%}N{% else %}{{ sl }}{% endif %}</th>
+    {% endfor %}
+    </thead>
+    <tbody>
+    {% for th in theme_result.themes %}
+        <tr>
+        <td class="theme-id">{{ th.id }}</td>
+        {% for sl, val in th.summ_labels %}
+        <td class="theme-summ-field">{{ val }}</td>
+        {% endfor %}
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
 <table class="theme-results">
     <thead>
     <th class="theme-id">ID</th>
@@ -41,7 +61,7 @@
         <td class="theme-id">{{ th.id }}</td>
         <td class="theme-labels">
             <dl>
-                {% for label, value in th.labels.items() %}
+                {% for label, value in th.labels %}
                 <dt>{{ label }}</dt>
                 <dd>{{ value }}</dd>
                 {% endfor %}
