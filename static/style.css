@@ -1,5 +1,5 @@
 body {
-    font-family: IdealSans-Light, sans-serif;
+    font-family: OpenSans, IdealSans-Light, sans-serif;
     font-size: 14px;
     padding: 30px;
 }
@@ -9,7 +9,7 @@ body {
 }
 
 .theme-id {
-    width: 5%;
+    width: 3%;
 }
 
 .theme-comments {
@@ -86,4 +86,8 @@ nav.configset-list li.other-tab {
 
 .login-form-wrapper {
     width: 100%;
+}
+
+.theme-summ {
+    margin-bottom: 30px;
 }
