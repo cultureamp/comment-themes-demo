@@ -98,6 +98,15 @@ class ThemeResult:
     def num_themes(self):
         return len(self.themes)
 
+    @property
+    def largest_theme_proportion(self):
+        return max(len(th.documents) for th in self.themes) / self.total_comments
+
+    @property
+    def smallest_theme_proportion(self):
+        return max(len(th.documents) for th in self.themes) / self.total_comments
+
+
 
 def purity(labels_true, clusters_pred):
     assert len(labels_true) == len(clusters_pred)
@@ -137,7 +146,9 @@ def show_survey_theme(configset, category, company, survey_id):
         except FileNotFoundError: # only one store will work
             continue
         break
-    metrics = [(key, getattr(theme_result, key)) for key in ('total_comments', 'num_themes', 'adj_nmi', 'purity')]
+    metric_keys = ('total_comments', 'num_themes', 'adj_nmi', 'purity',
+        'largest_theme_proportion', 'smallest_theme_proportion')
+    metrics = [(key, getattr(theme_result, key)) for key in metric_keys]
     return render_template("show-themes.html", theme_result=theme_result,
             all_configsets=list(all_configsets()), this_configset=configset,
             metrics=metrics)
