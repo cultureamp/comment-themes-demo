@@ -19,7 +19,7 @@ class DEFAULTS:
     CLUSTER_FILE_ROOTS = { 'all': './data/clusters' }
     TM_FILE_ROOTS = { 'all': './data/topic-models' }
 
-    LABEL_WHITELIST = {
+    LABEL_WHITELIST = [
         'most_common_05',
         'most_common_10',
         'highest_pmi_05',
@@ -32,14 +32,14 @@ class DEFAULTS:
         'total_words',
         'num_comments',
         'sentiment'
-    }
-    SUMM_LABEL_WHITELIST = {
+    ]
+    SUMM_LABEL_WHITELIST = [
+        'num_comments',
+        'sentiment',
         'most_common_05',
         'most_common_10',
         'summ_basic',
-        'num_comments',
-        'sentiment',
-    }
+    ]
     # LDAP_LOGIN_VIEW = 'sign_in'
     LDAP_OPT_PROTOCOL_VERSION = 3
     LDAP_USER_OBJECT_FILTER = '(&(objectclass=Person)(sAMAccountName=%s))' # for active directory
@@ -71,8 +71,8 @@ class Theme:
     def __init__(self, id, documents, labels):
         self.id = id
         self.documents = documents
-        self.labels = [(name, labels[name]) for name in labels if name in self.label_whitelist]
-        self.summ_labels = [(name, labels[name]) for name in labels if name in self.summ_label_whitelist]
+        self.labels = [(name, labels[name]) for name in self.label_whitelist if name in labels]
+        self.summ_labels = [(name, labels[name]) for name in self.summ_label_whitelist if name in labels]
 
 
 class ThemeDoc:
