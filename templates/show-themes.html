@@ -32,18 +32,18 @@
 <table class="theme-summ">
     {% set theme_proto = theme_result.themes[0] %}
     <thead>
-    <th class="theme-id">ID</th>
+    <th class="theme-summ-id">ID</th>
     {% for sl, _ in theme_proto.summ_labels %}
     <th class="theme-summ-field-head">{% if sl == 'num_comments'%}N{% else %}{{ sl }}{% endif %}</th>
     {% endfor %}
     </thead>
     <tbody>
     {% for th in theme_result.themes %}
-        <tr>
-        <td class="theme-id">{{ th.id }}</td>
-        {% for sl, val in th.summ_labels %}
-        <td class="theme-summ-field">{{ val }}</td>
-        {% endfor %}
+        <tr onclick="location.hash = 'theme-id-{{ th.id }}'; document.getElementById('theme-id-{{ th.id }}').scrollIntoView()">
+            <td class="theme-summ-id"><a href="#theme-id-{{ th.id }}">{{ th.id }}</a></td>
+            {% for sl, val in th.summ_labels %}
+            <td class="theme-summ-field">{{ val }}</td>
+            {% endfor %}
         </tr>
     {% endfor %}
     </tbody>
@@ -57,7 +57,7 @@
     </thead>
     <tbody>
     {% for th in theme_result.themes %}
-    <tr data-theme-id="{{ th.id }}">
+    <tr id="theme-id-{{ th.id }}" data-theme-id="{{ th.id }}">
         <td class="theme-id">{{ th.id }}</td>
         <td class="theme-labels">
             <dl>
