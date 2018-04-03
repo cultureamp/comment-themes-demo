@@ -63,7 +63,12 @@
             <dl>
                 {% for label, value in th.labels %}
                 <dt>{{ label }}</dt>
-                <dd>{{ value }}</dd>
+                <dd>{% if label == 'question_hist' %}
+                    <pre>{{ value }}</pre>
+                    {% else %}
+                    {{ value }}
+                    {% endif %}
+                </dd>
                 {% endfor %}
             </dl>
         </td>

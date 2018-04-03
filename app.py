@@ -33,6 +33,7 @@ class DEFAULTS:
         'num_comments',
         'sentiment',
         'question_distrib',
+        'question_hist',
     ]
     SUMM_LABEL_WHITELIST = [
         'num_comments',
@@ -72,14 +73,26 @@ class Theme:
     def __init__(self, id, documents, labels):
         self.id = id
         self.documents = documents
+        self._counts_by_q = None
+        self._store_counts_by_q()
         labels['question_distrib'] = self._question_distribution()
+        labels['question_hist'] = self._question_histogram()
         self.labels = [(name, labels[name]) for name in self.label_whitelist if name in labels]
         self.summ_labels = [(name, labels[name]) for name in self.summ_label_whitelist if name in labels]
 
-    def _question_distribution(self):
-        counts_by_q = defaultdict(int)
+    def _store_counts_by_q(self):
+        self._counts_by_q = defaultdict(int)
         for doc in self.documents:
-            counts_by_q[doc.question_id] += 1
+            self._counts_by_q[doc.question_id] += 1
+
+    def _question_histogram(self):
+        values = [(qid[-4:], ct) for qid, ct in self._counts_by_q.items() if ct > 1]
+        singletons = sum(1 for ct in self._counts_by_q.values() if ct == 1)
+        values.sort(key=lambda x: x[1], reverse=True)
+        return '\n'.join(f"{k}:{'#' * v}" for k, v in values + [('SING', singletons)])
+
+    def _question_distribution(self):
+        counts_by_q = self._counts_by_q
         total = len(self.documents)
         values = {qid[-4:]: f"{ct / total:.3f} [{ct}]" for qid, ct in counts_by_q.items() if ct > 1}
         singletons = sum(1 for ct in counts_by_q.values() if ct == 1)
