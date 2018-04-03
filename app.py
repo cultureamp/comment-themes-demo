@@ -94,6 +94,8 @@ class Theme:
     def _question_distribution(self):
         counts_by_q = self._counts_by_q
         total = len(self.documents)
+        if total == 0:
+            return ""
         values = {qid[-4:]: f"{ct / total:.3f} [{ct}]" for qid, ct in counts_by_q.items() if ct > 1}
         singletons = sum(1 for ct in counts_by_q.values() if ct == 1)
         non_single = [f"{k}: {v}" for k, v in sorted(values.items(), key=lambda x: x[1], reverse=True)]
