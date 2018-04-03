@@ -31,7 +31,8 @@ class DEFAULTS:
         'summ_textrank',
         'total_words',
         'num_comments',
-        'sentiment'
+        'sentiment',
+        'question_distrib',
     ]
     SUMM_LABEL_WHITELIST = [
         'num_comments',
@@ -71,8 +72,19 @@ class Theme:
     def __init__(self, id, documents, labels):
         self.id = id
         self.documents = documents
+        labels['question_distrib'] = self._question_distribution()
         self.labels = [(name, labels[name]) for name in self.label_whitelist if name in labels]
         self.summ_labels = [(name, labels[name]) for name in self.summ_label_whitelist if name in labels]
+
+    def _question_distribution(self):
+        counts_by_q = defaultdict(int)
+        for doc in self.documents:
+            counts_by_q[doc.question_id] += 1
+        total = len(self.documents)
+        values = {qid[-4:]: f"{ct / total:.3f} [{ct}]" for qid, ct in counts_by_q.items() if ct > 1}
+        singletons = sum(1 for ct in counts_by_q.values() if ct == 1)
+        non_single = [f"{k}: {v}" for k, v in sorted(values.items(), key=lambda x: x[1], reverse=True)]
+        return ", ".join(non_single + [f"SINGLETONS: {singletons / total :.3f} [{singletons}]"])
 
 
 class ThemeDoc:
@@ -120,7 +132,6 @@ class ThemeResult:
         return min(len(th.documents) for th in self.themes) / self.total_comments
 
 
-
 def purity(labels_true, clusters_pred):
     assert len(labels_true) == len(clusters_pred)
     assigns = pd.DataFrame({'label': labels_true, 'cluster': clusters_pred})
@@ -136,7 +147,6 @@ def purity(labels_true, clusters_pred):
 def _read_json(json_path):
     with open(json_path) as f:
         return json.load(f)
-
 
 
 @app.route('/themes/<category>/<configset>/<company>/<survey_id>')
@@ -277,7 +287,7 @@ class TMStore(ThemeStore):
     def _theme_result_from_stored(tm_pickle_path, label_json_path):
         with open(tm_pickle_path, 'rb') as f:
             tmr = pickle.load(f)
-        label_mapping = {int(v['topic_id']): v for k, v in _read_json(label_json_path).items()} #XXX why +1? hack
+        label_mapping = {int(v['topic_id']): v for k, v in _read_json(label_json_path).items()}
         def theme_docs(topic):
             for tmdoc in topic.documents(0.3):
                 yield ThemeDoc(tmdoc.id, tmdoc.raw_text, tmdoc.topic_proportion, tmdoc.raw_data['question_id'])
